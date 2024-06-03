@@ -11,7 +11,7 @@ const app = express();
 const server = createServer(app);
 const io = new Server(server, {
     cors: {
-        origin: "https://cd-front-xi.vercel.app",
+        origin: "*",
         methods: ["GET", "POST"],
         credentials: true,
     }
