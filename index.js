@@ -8,6 +8,12 @@ import Room from './models/room.model.js';
 dotenv.config();
 const port = process.env.PORT || 3000;
 const app = express();
+app.use(cors({
+    origin: "https://cd-front-xi.vercel.app",
+    methods: ["GET", "POST"],
+    credentials: true,
+}));
+
 const server = createServer(app);
 const io = new Server(server, {
     cors: {
