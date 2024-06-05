@@ -5,9 +5,11 @@ import { createServer } from 'http';
 import { Server } from 'socket.io';
 import connectDb from './db/index.js';
 import Room from './models/room.model.js';
+
 dotenv.config();
 const port = process.env.PORT || 3000;
 const app = express();
+
 app.use(cors({
     origin: "https://cd-front-xi.vercel.app",
     methods: ["GET", "POST"],
@@ -51,6 +53,9 @@ io.on('connection', (socket) => {
             console.log(name);
             socket.to(roomId).emit('otherJoined', { name });
 
+            // Emit the list of all users in the room
+            io.to(roomId).emit('allUsersInRoom', room.users);
+
         } catch (err) {
             console.error(err);
         }
@@ -69,13 +74,30 @@ io.on('connection', (socket) => {
         }
     });
 
-
-    socket.on('codeChange', ({ roomId, value }) => {
-        io.to(roomId).emit('codeChange', { value });
+    socket.on('requestInitialCode', async (roomId) => {
+        try {
+            const room = await Room.findOne({ roomId });
+            if (room) {
+                const initialCode = room.initialCode || "// Initial code";
+                socket.emit('initialCode', { value: initialCode });
+            }
+        } catch (err) {
+            console.error(err);
+        }
     });
 
-    socket.on('langChange', ({ roomId, lang }) => {
-        io.to(roomId).emit('langChange', { lang });
+    socket.on('codeChange', async ({ roomId, value }) => {
+        io.to(roomId).emit('codeChange', { value });
+        // Update the initial code in the room
+        try {
+            const room = await Room.findOne({ roomId });
+            if (room) {
+                room.initialCode = value;
+                await room.save();
+            }
+        } catch (err) {
+            console.error(err);
+        }
     });
 
     socket.on('disconnect', async () => {
@@ -102,8 +124,6 @@ io.on('connection', (socket) => {
     });
 
 });
-
-app.use(cors());
 
 app.get('/', function (req, res) {
     res.send("Server is running");
