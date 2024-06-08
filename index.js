@@ -74,30 +74,17 @@ io.on('connection', (socket) => {
         }
     });
 
-    socket.on('requestInitialCode', async (roomId) => {
-        try {
-            const room = await Room.findOne({ roomId });
-            if (room) {
-                const initialCode = room.initialCode || "// Initial code";
-                socket.emit('initialCode', { value: initialCode });
-            }
-        } catch (err) {
-            console.error(err);
-        }
-    });
+    socket.on('langChange', (data) => {
+        const lang = data.lang;
+        io.to(data.roomId).emit('langChange', lang)
+    })
+
+    socket.on('currentCode', ({ roomId, value }) => {
+        socket.to(roomId).emit('currentCode', { value });
+    })
 
     socket.on('codeChange', async ({ roomId, value }) => {
-        io.to(roomId).emit('codeChange', { value });
-        // Update the initial code in the room
-        try {
-            const room = await Room.findOne({ roomId });
-            if (room) {
-                room.initialCode = value;
-                await room.save();
-            }
-        } catch (err) {
-            console.error(err);
-        }
+        socket.to(roomId).emit('codeChange', { value });
     });
 
     socket.on('disconnect', async () => {
